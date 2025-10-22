@@ -1,3 +1,5 @@
+// /client/src/components/Message.jsx
+
 import React, { useEffect } from 'react'
 import { assets } from '../assets/assets'
 import moment from 'moment'

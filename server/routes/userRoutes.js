@@ -1,3 +1,5 @@
+// /server/routes/userRoutes.js
+
 import express from 'express';
 import { registerUser, loginUser, getUser, getPublishedImages } from '../controllers/userController.js';
 import { protect } from '../middlewares/auth.js';

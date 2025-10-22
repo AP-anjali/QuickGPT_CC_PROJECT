@@ -1,3 +1,5 @@
+// /server/controllers/messageController.js
+
 import Chat from "../models/Chat.js";
 import User from "../models/User.js";
 import axios from "axios";

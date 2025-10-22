@@ -1,3 +1,5 @@
+// /client/src/pages/Credits.jsx
+
 import React, { useEffect, useState } from 'react'
 import { dummyPlans } from '../assets/assets';
 import Loading from './Loading';

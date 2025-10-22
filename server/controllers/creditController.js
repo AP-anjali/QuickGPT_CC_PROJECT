@@ -1,3 +1,5 @@
+// /server/controllers/creditController.js
+
 import Transaction from "../models/Transactions.js";
 import Stripe from 'stripe';
 

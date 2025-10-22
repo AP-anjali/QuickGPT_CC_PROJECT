@@ -1,3 +1,5 @@
+// /client/src/App.jsx
+
 import React, { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import { Routes, Route, useLocation } from 'react-router-dom'

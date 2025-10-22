@@ -1,3 +1,5 @@
+// /client/src/components/Sidebar.jsx
+
 import React, { useState } from 'react'
 import { useAppContext } from '../context/AppContext';
 import { assets } from '../assets/assets';   

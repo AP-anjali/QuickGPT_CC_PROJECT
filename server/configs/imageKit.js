@@ -1,3 +1,5 @@
+// /server/configs/imageKit.js
+
 import ImageKit from "imagekit";
 
 var imagekit = new ImageKit({
