@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title><%= title %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-gray-100 p-6">
+    
+    <div class="max-w-5xl mx-auto">
+      
+      <h1 class="text-3xl font-bold mb-4">Pricing Plans</h1>
+      <p class="text-gray-600 mb-6">
+        These plans are server-side rendered using EJS
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        <% plans.forEach(plan => { %>
+        <div class="bg-white p-6 rounded-2xl shadow-md text-center">
+          
+          <h2 class="text-2xl font-semibold"><%= plan.name %></h2>
+
+          <div class="text-4xl font-bold text-blue-600 my-4">
+            ₹<%= plan.price %>
+          </div>
+
+          <p class="text-gray-700 mb-4"><%= plan.description %></p>
+
+          <ul class="text-left space-y-2 mt-4">
+            <% plan.features.forEach(f => { %>
+              <li class="text-gray-700 flex items-center gap-2">
+                <%= f %>
+              </li>
+            <% }) %>
+          </ul>
+
+        </div>
+        <% }) %>
+
+      </div>
+
+      <a 
+        href="/" 
+        class="inline-block mt-8 text-blue-600 hover:underline"
+      >
+        Back to Home
+      </a>
+
+    </div>
+
+  </body>
+</html>
