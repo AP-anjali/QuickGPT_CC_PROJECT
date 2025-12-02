@@ -1,0 +1,253 @@
+{
+  "info": {
+    "_postman_id": "quickgpt-collection-001",
+    "name": "QuickGPT APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "AUTH",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Anjali\",\n  \"email\": \"anjali@example.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"anjali@example.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Logged-in User",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "CHATS",
+      "item": [
+        {
+          "name": "Create Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/chats"
+          }
+        },
+        {
+          "name": "Get All Chats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/chats"
+          }
+        },
+        {
+          "name": "Get Chat By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/chats/{{chatId}}"
+          }
+        },
+        {
+          "name": "Update Chat Name",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/chats/{{chatId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My New Chat\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Chat",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/chats/{{chatId}}"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "MESSAGES",
+      "item": [
+        {
+          "name": "Send Text Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/messages/text",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chatId\": \"{{chatId}}\",\n  \"prompt\": \"react js definition\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate Image Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/messages/image",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chatId\": \"{{chatId}}\",\n  \"prompt\": \"cute dog wearing sunglasses\",\n  \"isPublished\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "CREDITS",
+      "item": [
+        {
+          "name": "Get Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/credits/plans"
+          }
+        },
+        {
+          "name": "Purchase Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/credits/purchase",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"basic\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/credits/transactions"
+          }
+        },
+        {
+          "name": "Update Transaction (manual admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/credits/transactions/{{transactionId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPaid\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "USER EXTRA",
+      "item": [
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Update User Credits",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}/credits",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credits\": 5000\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Published Images",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/published-images"
+          }
+        }
+      ]
+    },
+    {
+      "name": "THIRD PARTY API",
+      "item": [
+        {
+          "name": "Get Random Joke",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "https://official-joke-api.appspot.com/jokes/random"
+          }
+        }
+      ]
+    }
+  ]
+}

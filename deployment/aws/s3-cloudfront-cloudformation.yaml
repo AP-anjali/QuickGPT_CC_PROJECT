@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: S3 + CloudFront for QuickGPT frontend
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: quickgpt
+  DomainName:
+    Type: String
+    Default: ''  # optional custom domain (example.com)
+  CertificateArn:
+    Type: String
+    Default: ''  # ACM certificate ARN if you use custom domain
+
+Resources:
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${EnvironmentName}-frontend-bucket-${AWS::AccountId}'
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      VersioningConfiguration:
+        Status: Enabled
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Principal: '*'
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OAI for ${EnvironmentName}'
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        Enabled: true
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: none
+
+Outputs:
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+  CloudFrontDomain:
+    Value: !GetAtt Distribution.DomainName

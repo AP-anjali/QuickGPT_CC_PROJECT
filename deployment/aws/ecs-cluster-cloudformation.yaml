@@ -1,0 +1,200 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Fargate cluster, ALB, ECR repo, DocumentDB (sample)'
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: quickgpt
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC for ECS & DocumentDB
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets (private) - comma separated
+  AllowedCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: For ALB access (0.0.0.0/0 for public)
+
+Resources:
+
+  ECRRepoBackend:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub '${EnvironmentName}-backend-repo'
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "expire images older than 30 days",
+                "selection": { "tagStatus": "any", "countType": "sinceImagePushed", "countNumber": 30},
+                "action": {"type": "expire"}
+              }
+            ]
+          }
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${EnvironmentName}-ecs-cluster'
+
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ALB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AllowedCidr
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref AllowedCidr
+
+  ECSServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: security group for ECS tasks
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${EnvironmentName}-alb'
+      Subnets: !Ref SubnetIds
+      SecurityGroups: [!Ref ALBSecurityGroup]
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ALB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${EnvironmentName}-tg'
+      Port: 8080
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /health
+      HealthCheckPort: '8080'
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/${EnvironmentName}/backend'
+      RetentionInDays: 14
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${EnvironmentName}-ecs-task-exec-role'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  BackendTaskDef:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${EnvironmentName}-backend-task'
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: backend
+          Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EnvironmentName}-backend-repo:latest'
+          PortMappings:
+            - ContainerPort: 8080
+              Protocol: tcp
+          Essential: true
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: backend
+          Environment:
+            - Name: NODE_ENV
+              Value: production
+            - Name: MONGO_URI
+              Value: !Ref DocumentDBEndpoint
+
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListener
+    Properties:
+      Cluster: !Ref ECSCluster
+      ServiceName: !Sub '${EnvironmentName}-backend-service'
+      LaunchType: FARGATE
+      DesiredCount: 1
+      TaskDefinition: !Ref BackendTaskDef
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref ECSServiceSecurityGroup
+          Subnets: !Ref SubnetIds
+      LoadBalancers:
+        - TargetGroupArn: !Ref TargetGroup
+          ContainerName: backend
+          ContainerPort: 8080
+
+  # DocumentDB (sample)
+  DocumentDBSubnetGroup:
+    Type: AWS::DocDB::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for DocumentDB"
+      SubnetIds: !Ref SubnetIds
+      DBSubnetGroupName: !Sub '${EnvironmentName}-docdb-subnetgroup'
+
+  DocumentDBCluster:
+    Type: AWS::DocDB::DBCluster
+    Properties:
+      AutoMinorVersionUpgrade: true
+      DBClusterIdentifier: !Sub '${EnvironmentName}-docdb'
+      EngineVersion: '4.0.0'  # check region supported versions
+      MasterUsername: docdbadmin
+      MasterUserPassword: !Sub '{{resolve:ssm:${EnvironmentName}/docdb-root-password:1}}' # secure via SSM or Secrets Manager
+      DBSubnetGroupName: !Ref DocumentDBSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref ECSServiceSecurityGroup
+      StorageEncrypted: false
+
+Outputs:
+  ALB_DNS:
+    Value: !GetAtt ALB.DNSName
+    Export:
+      Name: !Sub '${EnvironmentName}-ALB-DNS'
+  BackendECRRepoUri:
+    Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EnvironmentName}-backend-repo'
